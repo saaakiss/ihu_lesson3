@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,6 +29,8 @@ import java.util.List;
  */
 
 public class ForecastFragment extends Fragment {
+
+    ArrayAdapter<String> adapter;
 
     String[] data = {
             "Mon 6/23 - Sunny - 31/17",
@@ -45,11 +48,13 @@ public class ForecastFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
+    //add the options menu
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.forecast_fragment, menu);
     }
 
+    //what to happen if we click the option item "refresh"
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -64,6 +69,9 @@ public class ForecastFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
+    //inner class which implements the async task
+    //creates a separate thread and feed data from an api
+    //we use a separate thread in order not to block the main UI untill the process is completed
     public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
 
@@ -74,11 +82,19 @@ public class ForecastFragment extends Fragment {
             BufferedReader reader = null;
             String forecastString = null;
 
+            int numDays = 7;
+
             try{
                 URL url
-                        = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=thessaloniki,gr&APPID=8cbf55d68127d9483386b81e1ab1cd8d&cnt=7");
+                        = new URL("http://api.openweathermap.org/data/2.5/" +
+                        "forecast/daily?" +
+                        "q=thessaloniki,gr" +
+                        "&units=metric" +
+                        "&APPID=8cbf55d68127d9483386b81e1ab1cd8d" +
+                        "&cnt=" + numDays);
 
                 urlConnection = (HttpURLConnection)url.openConnection();
+                //get request (get vs post also depends on the API)
                 urlConnection.setRequestMethod("GET");
                 urlConnection.connect();
 
@@ -100,11 +116,11 @@ public class ForecastFragment extends Fragment {
                     return null;
                 }
 
-                forecastString = buffer.toString();
+                forecastString = buffer.toString(); //all the response is contained here!
 
                 Log.i("ForecastFragment", forecastString);
 
-                return new String[1];
+                return WeatherParser.parseWeatherFromJSON(numDays, forecastString);
 
             }catch (Exception e){
                 Log.e("ForecastFragment", "Error", e);
@@ -120,6 +136,20 @@ public class ForecastFragment extends Fragment {
 
            return null;
         }
+
+        //when data fetch suceesfully is that i will call onPostExecute
+        @Override
+        protected void onPostExecute(String[] weatherResults) {
+            if (weatherResults != null){
+                adapter.clear();
+                for (String s : weatherResults){
+                    adapter.add(s);
+                }
+            }
+
+
+
+        }
     }
 
 
@@ -131,10 +161,9 @@ public class ForecastFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        List<String> dummyData = Arrays.asList(data);
+        ArrayList<String> dummyData = new ArrayList<String>(Arrays.asList(data));
 
-        ArrayAdapter<String> adapter
-                = new ArrayAdapter<String>(
+        adapter = new ArrayAdapter<String>(
                 getActivity(),
                 R.layout.list_item_forecast,
                 R.id.list_item_forecast_textview,
