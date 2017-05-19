@@ -29,6 +29,7 @@ public class WeatherParser {
         String OWM_Max = "max";
         String OWM_Min = "min";
         String OWM_description = "main";
+        String OWM_humidity = "humidity";
 
         //create a JSON object
         JSONObject forecastObj = new JSONObject(jsonWeather); //we add an exception because sth may go wrong with the parsing
@@ -58,9 +59,11 @@ public class WeatherParser {
             double max = tempObj.getDouble(OWM_Max);
             double min = tempObj.getDouble(OWM_Min);
 
+            int humidity = dayForecast.getInt(OWM_humidity);
+
             minmax = Math.round(min) + " - " + Math.round(max);
 
-            results[i] = day + " | "+ description + " | "+minmax;
+            results[i] = day + " | "+ description + " | "+minmax + " | "  + humidity;
 
         }
 
